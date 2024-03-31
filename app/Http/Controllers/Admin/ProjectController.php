@@ -8,6 +8,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Technology;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -38,7 +39,8 @@ class ProjectController extends Controller
     {
         $project = new Project();
         $categories = Category::select('label', 'id')->get();
-        return view('admin.projects.create', compact('project', 'categories'));
+        $technologies = Technology::select('label', 'id')->get();
+        return view('admin.projects.create', compact('project', 'categories', 'technologies'));
     }
 
     /**
@@ -51,7 +53,8 @@ class ProjectController extends Controller
             'content' => 'required|string',
             'image' => 'nullable|image|mimes:png,jpg,jpeg',
             'is_published' => 'nullable|boolean',
-            'category_id' => 'nullable|exists:categories.id'
+            'category_id' => 'nullable|exists:categories,id',
+            'technologies' => 'nullable|exists:technologies,id'
         ], [
             'title.required' => 'Il titolo e\' obbligatorio',
             'title.unique' => 'Questo titolo e\' gia\' stato utilizzato',
@@ -61,7 +64,8 @@ class ProjectController extends Controller
             'image.image' => 'Le estensioni valide sono .png, .jpg, .jpeg',
             'is_published.boolean' => 'Il valore del campo pubblicazione non e\' valido',
             'content.required' => 'La descrizione e\' obblogatoria',
-            'category_id.exists' => 'Categoria non valida o non esiste'
+            'category_id.exists' => 'Categoria non valida o non esiste',
+            'technologies.exists' => 'Tecnologia selezionata non valida'
         ]);
 
         $data = $request->all();
@@ -83,6 +87,9 @@ class ProjectController extends Controller
 
         $project->save();
 
+        if (Arr::exists($data, 'technologies')) {
+            $project->technologies()->attach($data['technologies']);
+        }
         return to_route('admin.projects.show', $project)->with('message', 'Progetto creato con successo')->with('type', 'success');
     }
 
@@ -99,8 +106,11 @@ class ProjectController extends Controller
      */
     public function edit(Project $project)
     {
+        $prev_technologies = $project->technologies->pluck('id')->toArray();
+
         $categories = Category::select('label', 'id')->get();
-        return view('admin.projects.edit', compact('project', 'categories'));
+        $technologies = Technology::select('label', 'id')->get();
+        return view('admin.projects.edit', compact('project', 'categories', 'technologies', 'prev_technologies'));
     }
 
     /**
@@ -113,7 +123,8 @@ class ProjectController extends Controller
             'content' => 'required|string',
             'image' => 'nullable|image|mimes:png,jpg,jpeg',
             'is_published' => 'nullable|boolean',
-            'category_id' => 'nullable|exists:categories,id'
+            'category_id' => 'nullable|exists:categories,id',
+            'technologies' => 'nullable|exists:technologies,id'
         ], [
             'title.required' => 'Il titolo e\' obbligatorio',
             'title.unique' => 'Questo titolo e\' gia\' stato utilizzato',
@@ -123,7 +134,8 @@ class ProjectController extends Controller
             'image.image' => 'Le estensioni valide sono .png, .jpg, .jpeg',
             'is_published.boolean' => 'Il valore del campo pubblicazione non e\' valido',
             'content.required' => 'La descrizione e\' obblogatoria',
-            'category_id.exists' => 'Categoria non valida o non esiste'
+            'category_id.exists' => 'Categoria non valida o non esiste',
+            'technologies.exists' => 'Tecnologia selezionata non valida'
         ]);
 
         $data = $request->all();
@@ -143,6 +155,9 @@ class ProjectController extends Controller
         }
 
         $project->update($data);
+
+        if (Arr::exists($data, 'technologies')) $project->technologies()->sync($data['technologies']);
+        elseif (!Arr::exists($data, 'technologies') && $project->has('technologies')) $project->technologies()->detach();
 
         return to_route('admin.projects.show', $project)->with('message', 'Progetto modificato con successo')->with('type', 'success');
     }
@@ -174,6 +189,8 @@ class ProjectController extends Controller
 
     public function drop(Project $project)
     {
+        if ($project->has('technologies')) $project->technologies()->detach();
+
         //controllo se aveva gia' immagine
         if ($project->image) Storage::delete($project->image);
 

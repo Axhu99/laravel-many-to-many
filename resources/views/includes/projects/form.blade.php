@@ -90,8 +90,27 @@
             : 'https://marcolanci.it/boolean/assets/placeholder.png' }}"
             alt="{{ $project->image ? $project->slug : 'preview' }}" id="preview" class="img-fluid">
     </div>
-    <div class="col-12 d-flex justify-content-end">
-        <div class="form-check">
+    <div class="col-10">
+        <div class="form-group @error('technologies') is-invalid @enderror">
+
+            @foreach ($technologies as $technology)
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" name="technologies[]"
+                        id="{{ "technology-$technology->id" }}" value="{{ $technology->id }}"
+                        @if (in_array($technology->id, old('technologies', $prev_technologies ?? []))) checked @endif>
+                    <label class="form-check-label"
+                        for="{{ "technology-$technology->id" }}">{{ $technology->label }}</label>
+                </div>
+            @endforeach
+        </div>
+        @error('technologies')
+            <div class="invalid-feedback">
+                {{ $message }}
+            </div>
+        @enderror
+    </div>
+    <div class="col-2 d-flex justify-content-end">
+        <div class="form-check  form-switch">
             <input class="form-check-input" type="checkbox" name="is_published" id="is_published" value="1"
                 @if (old('is_published', $project->is_published)) checked @endif>
             <label class="form-check-label" for="is_published">

@@ -29,6 +29,7 @@
                 <th scope="col">Titolo</th>
                 <th scope="col">Slug</th>
                 <th scope="col">Categoria</th>
+                <th scope="col">Tecnologie</th>
                 <th scope="col">Pubblicato</th>
                 <th scope="col">Creato il</th>
                 <th scope="col">Ultima modifica</th>
@@ -54,6 +55,14 @@
                         @else
                             ---
                         @endif
+                    </td>
+                    <td>
+                        @forelse ($project->technologies as $technology)
+                            <span
+                                class="badge rounded-pill text-bg-{{ $technology->color }}">{{ $technology->label }}</span>
+                        @empty
+                            ---
+                        @endforelse
                     </td>
                     <td>
                         <form action="{{ route('admin.projects.publish', $project->id) }}" method="POST"
@@ -93,7 +102,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8">
+                    <td colspan="9">
                         <h3 class="text-center">Non ci sono PROGETTI</h3>
                     </td>
                 </tr>
